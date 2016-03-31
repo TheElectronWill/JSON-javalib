@@ -2,6 +2,7 @@ package com.electronwill.json;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.List;
@@ -116,8 +117,7 @@ public final class Json {
 	 */
 	public static Object load(InputStream in) {
 		try {
-			Reader reader = UnicodeDetector.getReader(in);
-			JsonReader parser = new JsonReader(reader);
+			JsonReader parser = new JsonReader(new InputStreamReader(in));
 			return parser.parse();
 		} catch (IOException ex) {
 			throw new JsonException(ex);
@@ -165,8 +165,7 @@ public final class Json {
 	 */
 	public static List<Object> loadAll(InputStream in) {
 		try {
-			Reader reader = UnicodeDetector.getReader(in);
-			JsonReader parser = new JsonReader(reader);
+			JsonReader parser = new JsonReader(new InputStreamReader(in));
 			return parser.parseAll();
 		} catch (IOException ex) {
 			throw new JsonException(ex);
