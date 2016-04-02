@@ -3,7 +3,7 @@ package com.electronwill.json;
 import java.io.Writer;
 
 /**
- * A Writer which writes in a StringBuilder. This is NOT Thread safe.
+ * A Writer that writes in a StringBuilder. It isn't thread-safe.
  */
 public class FastStringWriter extends Writer {
 	
@@ -21,7 +21,7 @@ public class FastStringWriter extends Writer {
 	
 	/**
 	 * Creates a new FastStringWriter with a given StringBuilder. It will append everything to this StringBuilder.
-	 *
+	 * 
 	 * @param sb the StringBuilder
 	 */
 	public FastStringWriter(final StringBuilder sb) {
@@ -29,18 +29,14 @@ public class FastStringWriter extends Writer {
 	}
 	
 	/**
-	 * Returns the underlying StringBuilder.
-	 *
-	 * @return the underlying StringBuilder
+	 * Gets the underlying StringBuilder.
 	 */
 	public StringBuilder getBuilder() {
 		return sb;
 	}
 	
 	/**
-	 * Returns the content of the underlying StringBuilder, as a String. Equivalent to {@link #getBuilder()#toString()}.
-	 *
-	 * @return the content of the underlying StringBuilder
+	 * Gets the content of the underlying StringBuilder, as a String. Equivalent to {@link #getBuilder()#toString()}.
 	 */
 	@Override
 	public String toString() {
@@ -86,13 +82,13 @@ public class FastStringWriter extends Writer {
 	}
 	
 	/**
-	 * This method does nothing.
+	 * Does nothing.
 	 */
 	@Override
 	public void flush() {}
 	
 	/**
-	 * This method does nothing.
+	 * Does nothing.
 	 */
 	@Override
 	public void close() {}
