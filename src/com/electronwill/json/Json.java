@@ -1,11 +1,10 @@
 package com.electronwill.json;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility class for reading and writing JSON data. This class internally uses {@link JsonReader} and {@link JsonWriter}
@@ -15,178 +14,139 @@ import java.util.List;
  */
 public final class Json {
 	
+	/**
+	 * Reads a json array from a Reader.
+	 */
+	public static List<Object> readArray(Reader reader) throws IOException {
+		String data = readToString(reader);
+		JsonReader jr = new JsonReader(data);
+		return jr.readArray();
+	}
+	
+	/**
+	 * Reads a json array from a String.
+	 */
+	public static List<Object> readArray(String data) throws IOException {
+		JsonReader jr = new JsonReader(data);
+		return jr.readArray();
+	}
+	
+	/**
+	 * Reads a json object from a Reader.
+	 */
+	public static Map<String, Object> readObject(Reader reader) throws IOException {
+		String data = readToString(reader);
+		JsonReader jr = new JsonReader(data);
+		return jr.readObject();
+	}
+	
+	/**
+	 * Reads a json object from a String.
+	 */
+	public static Map<String, Object> readObject(String data) throws IOException {
+		JsonReader jr = new JsonReader(data);
+		return jr.readObject();
+	}
+	
+	/**
+	 * Reads a json object or a json array, depending on the first non space (and non newline) character read.
+	 */
+	public static Object readObjectOrArray(Reader reader) throws IOException {
+		String data = readToString(reader);
+		JsonReader jr = new JsonReader(data);
+		return jr.readObjectOrArray();
+	}
+	
+	/**
+	 * Reads a json object or a json array, depending on the first non space (and non newline) character read.
+	 */
+	public static Object readObjectOrArray(String data) throws IOException {
+		JsonReader jr = new JsonReader(data);
+		return jr.readObjectOrArray();
+	}
+	
+	private static String readToString(Reader reader) throws IOException {
+		StringBuilder sb = new StringBuilder(4096);
+		char[] buf = new char[4096];
+		int read;
+		while ((read = reader.read(buf)) != -1) {
+			sb.append(buf, 0, read);
+		}
+		return sb.toString();
+	}
+	
+	/**
+	 * Writes a json array to a Writer. This method is equivalent to {@code write(jsonArray, writer, false)}, so it
+	 * isn't human friendly.
+	 */
+	public static void write(List<Object> jsonArray, Writer writer) throws IOException {
+		write(jsonArray, writer, false);
+	}
+	
+	/**
+	 * Writes a json array to a Writer.
+	 * 
+	 * @param true to indent and space the output, false to compact everything
+	 */
+	public static void write(List<Object> jsonArray, Writer writer, boolean humanFriendly) throws IOException {
+		JsonWriter jw = new JsonWriter(writer, humanFriendly);
+		jw.writeArray(jsonArray);
+	}
+	
+	/**
+	 * Writes a json object to a Writer. This method is equivalent to {@code write(jsonObject, writer, false)}, so it
+	 * isn't human friendly.
+	 */
+	public static void write(Map<String, Object> jsonObject, Writer writer) throws IOException {
+		write(jsonObject, writer, false);
+	}
+	
+	/**
+	 * Writes a json object to a Writer.
+	 * 
+	 * @param true to indent and space the output, false to compact everything
+	 */
+	public static void write(Map<String, Object> jsonObject, Writer writer, boolean humanFriendly) throws IOException {
+		JsonWriter jw = new JsonWriter(writer, humanFriendly);
+		jw.writeObject(jsonObject);
+	}
+	
+	/**
+	 * Writes a json array to a String. This method is equivalent to {@code write(jsonArray, false)}, so it isn't human
+	 * friendly.
+	 */
+	public static void writeToString(List<Object> jsonArray) throws IOException {
+		writeToString(jsonArray, false);
+	}
+	
+	/**
+	 * Writes a json array to a String.
+	 * 
+	 * @param true to indent and space the output, false to compact everything
+	 */
+	public static void writeToString(List<Object> jsonArray, boolean humanFriendly) throws IOException {
+		FastStringWriter stringWriter = new FastStringWriter();
+		write(jsonArray, stringWriter, humanFriendly);
+	}
+	
+	/**
+	 * Writes a json object to a Writer. This method is equivalent to {@code write(jsonObject, writer, false)}, so it
+	 * isn't human friendly.
+	 */
+	public static void writeToString(Map<String, Object> jsonObject) throws IOException {
+		writeToString(jsonObject, false);
+	}
+	
+	/**
+	 * Writes a json object to a String.
+	 * 
+	 * @param true to indent and space the output, false to compact everything
+	 */
+	public static void writeToString(Map<String, Object> jsonObject, boolean humanFriendly) throws IOException {
+		FastStringWriter stringWriter = new FastStringWriter();
+		write(jsonObject, stringWriter, humanFriendly);
+	}
+	
 	private Json() {}
-	
-	/**
-	 * Dumps a given Json Structure (i.e. either an Object[] or a Map) into a String.
-	 *
-	 * @param jsonStructure the structure to dump
-	 * @param humanFriendly <code>true</true> if we should indent our output, <code>false</code> otherwise.
-	 * @return a String which represents this structure
-	 * @throws JsonException if a problem occur
-	 */
-	public static String dump(Object jsonStructure, boolean humanFriendly) {
-		JsonWriter writer = new JsonWriter(humanFriendly);
-		try {
-			writer.write(jsonStructure);
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-		return writer.toString();
-	}
-	
-	/**
-	 * Dumps all the given Json structures into a String.
-	 *
-	 * @param jsonStructures the several structures to dump
-	 * @param humanFriendly <code>true</true> if we should indent our output, <code>false</code> otherwise.
-	 * @return a String which represents this structure
-	 * @throws JsonException if a problem occur
-	 */
-	public static String dumpAll(Iterable<Object> jsonStructures, boolean humanFriendly) {
-		JsonWriter writer = new JsonWriter(humanFriendly);
-		for (Object structure : jsonStructures) {
-			try {
-				writer.write(structure);
-			} catch (IOException ex) {
-				throw new JsonException(ex);
-			}
-		}
-		return writer.toString();
-	}
-	
-	/**
-	 * Dumps a given Json structures into a Writer.
-	 *
-	 * @param jsonStructure the several structures to dump
-	 * @param humanFriendly <code>true</true> if we should indent our output, <code>false</code> otherwise.
-	 * @param output the output Writer
-	 * @throws JsonException if a problem occur
-	 */
-	public static void dump(Object jsonStructure, Writer output, boolean humanFriendly) {
-		JsonWriter writer = new JsonWriter(output, humanFriendly);
-		try {
-			writer.write(jsonStructure);
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-		
-	}
-	
-	/**
-	 * Dumps all the given Json structures into a Writer.
-	 *
-	 * @param jsonStructures the several structures to dump
-	 * @param humanFriendly <code>true</true> if we should indent our output, <code>false</code> otherwise.
-	 * @param output the output Writer
-	 * @throws JsonException if a problem occur
-	 */
-	public static void dumpAll(Iterable<Object> jsonStructures, Writer output, boolean humanFriendly) {
-		JsonWriter writer = new JsonWriter(output, humanFriendly);
-		for (Object structure : jsonStructures) {
-			try {
-				writer.write(structure);
-			} catch (IOException ex) {
-				throw new JsonException(ex);
-			}
-		}
-	}
-	
-	/**
-	 * Reads a Json structure from a String.
-	 *
-	 * @param json a String containing (at least) a Json structure
-	 * @return the corresponding Json structure: eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 * @throws JsonException if a problem occur
-	 */
-	public static Object load(String json) {
-		JsonReader parser = new JsonReader(json);
-		try {
-			return parser.parse();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
-	
-	/**
-	 * Reads a Json structure from an Inputstream.
-	 *
-	 * @param in an InputStream containing a Json structure
-	 * @return the corresponding Json structure: eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 * @throws JsonException if a problem occur
-	 */
-	public static Object load(InputStream in) {
-		try {
-			JsonReader parser = new JsonReader(new InputStreamReader(in));
-			return parser.parse();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
-	
-	/**
-	 * Reads a Json structure with the given Reader.
-	 *
-	 * @param reader a Reader which can read a Json structure.
-	 * @return the corresponding Json structure: eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 * @throws JsonException if a problem occur
-	 */
-	public static Object load(Reader reader) {
-		try {
-			JsonReader parser = new JsonReader(reader);
-			return parser.parse();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
-	
-	/**
-	 * Reads all the Json structures in a given String.
-	 *
-	 * @param json a String containing at least one Json structure.
-	 * @return the corresponding Json structure: eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 */
-	public static List<Object> loadAll(String json) {
-		JsonReader parser = new JsonReader(json);
-		try {
-			return parser.parseAll();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
-	
-	/**
-	 * Reads all the Json structures in a given InputStream.
-	 *
-	 * @param in an InputStream containing at least one Json structure.
-	 * @return {@code List<Map<String, Object>>} ou {@code List<Object[]>}.@return the corresponding Json structure:
-	 *         eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 * @throws JsonException if a problem occur
-	 */
-	public static List<Object> loadAll(InputStream in) {
-		try {
-			JsonReader parser = new JsonReader(new InputStreamReader(in));
-			return parser.parseAll();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
-	
-	/**
-	 * Reads all the Json structures with the given Reader.
-	 *
-	 * @param reader an Reader which can read at least one Json structure.
-	 * @return {@code List<Map<String, Object>>} ou {@code List<Object[]>}.@return the corresponding Json structure:
-	 *         eighter a {@code Map<String, Object>} or an <code>Object[]</code>.
-	 * @throws JsonException if a problem occur
-	 */
-	public static List<Object> loadAll(Reader reader) {
-		try {
-			JsonReader parser = new JsonReader(reader);
-			return parser.parseAll();
-		} catch (IOException ex) {
-			throw new JsonException(ex);
-		}
-	}
 	
 }

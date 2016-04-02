@@ -1,219 +1,95 @@
 package com.electronwill.json;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * Parses Json data.
- *
+ * Reads json data.
+ * 
  * @author TheElectronWill
+ *		
  */
 public class JsonReader {
+	private final String data;
+	private int pos = 0;
 	
-	protected char[] chars;
-	protected int i = 0;
-	protected int size;
-	protected Reader reader;
-	protected int blockSize;
-	
-	public JsonReader(String s) {
-		this.chars = s.toCharArray();
-		reader = null;
-		size = chars.length;
-		blockSize = -1;
+	public JsonReader(String data) {
+		this.data = data;
 	}
 	
-	public JsonReader(char[] chars, int from, int to) {
-		this.chars = Arrays.copyOfRange(chars, from, to);
-		reader = null;
-		size = chars.length;
-		blockSize = -1;
+	public Object readObjectOrArray() {
+		char firstChar = nextUseful();
+		if (firstChar == '{')
+			return nextObject();
+		if (firstChar == '[')
+			return nextArray();
+		throw new JsonException("Invalid character '" + firstChar + "' at the beginning of the data");
 	}
 	
-	public JsonReader(char[] chars) {
-		this.chars = chars;
-		reader = null;
-		size = chars.length;
-		blockSize = -1;
-	}
-	
-	public JsonReader(char[] chars, boolean direct) {
-		if (direct) {
-			this.chars = chars;
-		} else {
-			this.chars = Arrays.copyOf(chars, chars.length);
-		}
-		reader = null;
-		size = chars.length;
-		blockSize = -1;
-	}
-	
-	public JsonReader(Reader reader) throws IOException {
-		this.reader = reader;
-		blockSize = 8192;
-		chars = new char[blockSize];
-		size = 0;
-	}
-	
-	public JsonReader(Reader reader, int blockSize) throws IOException {
-		this.reader = reader;
-		this.blockSize = blockSize;
-		chars = new char[blockSize];
-		size = 0;
-	}
-	
-	/**
-	 * Reads the Json structure in {@link #chars}.
-	 *
-	 * @return
-	 * @throws java.io.IOException
-	 */
-	public Object parse() throws IOException {
-		if (reader != null && i == size) {
-			fill();
-		}
-		char first = nextUseful();// Le tout premier caractère utile des données JSON.
-		switch (first) {
-			case '{':
-				return nextObject();
-			case '[':
-				return nextArray();
-			default:
-				throw new JsonException("Invalid character n°" + i + " " + first + " at the beginning of a structure. Expected { or [");
-		}
-	}
-	
-	/**
-	 * Read all the Json structures in {@link #chars}.
-	 *
-	 * @return
-	 * @throws java.io.IOException
-	 */
-	public List<Object> parseAll() throws IOException {
-		ArrayList<Object> list = new ArrayList<>();
-		while (true) {
-			Object structure = parse();
-			list.add(structure);
-			while (true) {
-				if (i == size) {
-					if (reader == null || !tryRefill()) {
-						return list;
-					}
-				}
-				char c = chars[i++];
-				if (isUseful(c) && c != '{' && c != '[') {
-					throw new JsonException("Invalid structure " + list.size() + ". A structure begins with { or [");
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Reads a Json object.
-	 *
-	 * @return the corresponding {@code Map<String, Object>}
-	 */
-	public Map<String, Object> parseObject() {
-		char first = nextUseful();
-		if (first != '{') {
-			throw new JsonException("Invalid character n°" + i + " " + first + " at the beginning of a Json object. Expected {");
-		}
+	public Map<String, Object> readObject() {
+		char firstChar = nextUseful();
+		if (firstChar != '{')
+			throw new JsonException("Invalid character '" + firstChar + "' at the beginning of a JSON object, at position " + pos);
 		return nextObject();
 	}
 	
-	/**
-	 * Reads a Json array
-	 *
-	 * @return the corresponding <code>Object[]</code>
-	 */
-	public Object[] parseArray() {
-		char first = nextUseful();
-		if (first != '[') {
-			throw new JsonException("Invalid character n°" + i + " " + first + " at the beginning of a Json array. Expected [");
-		}
+	public List<Object> readArray() {
+		char firstChar = nextUseful();
+		if (firstChar != '[')
+			throw new JsonException("Invalid character '" + firstChar + "' at the beginning of a JSON array, at position " + pos);
 		return nextArray();
 	}
 	
-	/**
-	 * Reads the next Json Object until a '}' character is read. The '{' character must have been read BEFORE calling
-	 * this method.<br>
-	 * This method DOES read the last '}' character.
-	 *
-	 * @return the corresponding {@code Map<String, object>}
-	 */
-	protected Map<String, Object> nextObject() {
-		HashMap<String, Object> objectMap = new HashMap<>();
-		// boolean nameExpected = true;//Si on a lu une virgule et que donc on devrait lire un nom de paire nom/valeur
-		// boolean valueExpected = false;//Si on a lu deux points et que donc on devrait lire une valeur de paire
-		// nom/valeur
+	private Map<String, Object> nextObject() {
+		Map<String, Object> map = new HashMap<>();
 		while (true) {
-			char nameFirst = nextUseful();// Premier caractère du nom
-			if (nameFirst != '\"') {
-				throw new JsonException("character", nameFirst, " at the beginning of a name", i, "\"");
-			}
-			String name = nextString();
+			char keyFirstChar = nextUseful();
+			if (keyFirstChar != '"')
+				throw new JsonException("Invalid character at the beginning of a key, at position " + pos);
+			String key = nextString();
 			
-			char separator = nextUseful();
-			if (separator != ':') {
-				throw new JsonException("separator", separator, " between a name and a value", i, ":");
-			}
-			char valueFirst = nextUseful();// Premier caractère de la valeur
-			Object value = nextValue(valueFirst);
-			objectMap.put(name, value);
+			char sep = nextUseful();
+			if (sep != ':')
+				throw new JsonException("Invalid separator '" + sep + "' at position " + pos);
+				
+			char valueFirstChar = nextUseful();
+			Object value = nextValue(valueFirstChar, ',', '}', ' ', '\t', '\n', '\r');
+			map.put(key, value);
 			
-			char afterEntry = nextUseful();
-			if (afterEntry == '}') {
-				return objectMap;
+			char after = nextUseful();
+			if (after == '}') {
+				return map;
+			} else if (after != ',') {
+				throw new JsonException("Invalid separator '" + after + "' at position " + pos);
 			}
-			if (afterEntry != ',') {
-				throw new JsonException("separator", afterEntry, " between two name-value pairs", i, ",");
-			}
+			
 		}
 	}
 	
-	/**
-	 * Reads the next Json Array until a ']' character is read. The '[' character must have been read BEFORE calling
-	 * this method.<br>
-	 * This method DOES read the last ']' character.
-	 *
-	 * @return the corresponding <code>Object[]</code>
-	 */
-	protected Object[] nextArray() {
+	private List<Object> nextArray() {
 		ArrayList<Object> list = new ArrayList<>();
 		while (true) {
-			char c = nextUseful();
-			Object value = nextValue(c);
+			char firstChar = nextUseful();
+			if (firstChar == ']') {// empty array
+				list.trimToSize();
+				return list;
+			}
+			Object value = nextValue(firstChar, ',', ']', ' ', '\t', '\n', '\r');
 			list.add(value);
-			
-			char afterEntry = nextUseful();// La virgule après, ou le crochet si l'array est terminé.
-			if (afterEntry == ']') {
-				return list.toArray();// C'est fini, on retourne le résultat.
+			char after = nextUseful();
+			if (after == ']') {
+				return list;
+			} else if (after != ',') {
+				throw new JsonException("Invalid separator '" + after + "'at position " + pos);
 			}
-			if (afterEntry != ',') {
-				throw new JsonException("separator", afterEntry, " between two name-value pairs", i, ",");
-			}
-			// Si on vient de lire une virgule, alors on attend un valeur juste après:
 		}
-		
 	}
 	
-	/**
-	 * Read the next value. The first character of the value must have been read BEFORE calling this method<br>
-	 * Cette méthode fait comme si elle n'avait pas lu la virgule, l'accolade ou le crochet qui se trouve après la
-	 * valeur
-	 *
-	 * @param first le premier caractère de la valeur.
-	 * @return
-	 */
-	protected Object nextValue(char first) {
-		char c2, c3, c4;
-		switch (first) {
+	private Object nextValue(char firstChar, char... allowedEnds) {
+		switch (firstChar) {
+			case '+':
 			case '-':
 			case '0':
 			case '1':
@@ -225,278 +101,117 @@ public class JsonReader {
 			case '7':
 			case '8':
 			case '9':
-				return nextNumber(first);
+				pos--;// to include the first char in the string below
+				String number = until(allowedEnds);
+				if (number.indexOf('.') > 0)
+					return Double.parseDouble(number);
+				if (number.length() < 10)
+					return Integer.parseInt(number);
+				return Long.parseLong(number);
 			case '"':
 				return nextString();
-			case '[':
-				return nextArray();
+			case 't':// true
+			case 'f':// false
+				pos--;// to include the first char in the string below
+				String bool = until(allowedEnds);
+				return Boolean.parseBoolean(bool);
+			case 'n':// null
+				String valNull = until(allowedEnds);
+				if (valNull.equals("ull"))
+					return null;
+				throw new JsonException("Invalid value \"n" + valNull + "\" at position " + pos);
 			case '{':
 				return nextObject();
-			case 'n':// Doit être "null"
-				c2 = next();// normalement 'u'
-				c3 = next();// normalement 'l'
-				c4 = next();// normalement 'l'
-				if (c2 != 'u' || c3 != 'l' || c4 != 'l') {
-					throw new JsonException("Invalid value " + first + c2 + c3 + c4);
-				}
-				return null;
-			case 't':// Doit être "true"
-				c2 = next();// normalement 'r'
-				c3 = next();// normalement 'u'
-				c4 = next();// normalement 'e'
-				if (c2 != 'r' || c3 != 'u' || c4 != 'e') {
-					throw new JsonException("Invalid value " + first + c2 + c3 + c4);
-				}
-				return true;
-			case 'f':// Doit être "false":
-				c2 = next();// normalement 'a'
-				c3 = next();// normalement 'l'
-				c4 = next();// normalement 's'
-				char c5 = next();// normalement 'e'
-				if (c2 != 'a' || c3 != 'l' || c4 != 's' || c5 != 'e') {
-					throw new JsonException("Invalid value " + first + c2 + c3 + c4 + c5);
-				}
-				return false;
+			case '[':
+				return nextArray();
 			default:
-				throw new JsonException("character", first, "at the beginning of a value", i,
-						"[, {, \", null, true, false, - (minus) or a digit.");
+				throw new JsonException("Invalid character '" + firstChar + "' at the beginning of the value at position " + pos);
 		}
+		
 	}
 	
-	/**
-	 * Lit tous les caractères jusqu'à ce qu'un espace, une virgule, un crochet fermant ou une accolade fermante soit
-	 * rencontrée. <br>
-	 * Cette méthode fait comme si elle n'avait pas lu la virgule, le crochet ou l'accolade terminant le nombre.
-	 *
-	 * @param first le premier caractère qui a été lu.
-	 * @return
-	 */
-	protected Number nextNumber(char first) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(first);
-		while (true) {
-			char c = next();
-			if ((c >= '0' && c <= '9') || c == '.' || c == '-' || c == 'e' || c == 'E' || c == '+') {
-				sb.append(c);
-			} else if (isUseless(c)) {// fin du nombre
-				break;
-			} else if (c == ',' || c == ']' || c == '}') {// fin du nombre
-				i--;// Comme si on n'avait pas lu le token.
-				break;
-			} else {
-				throw new JsonException("character", c, "in a number value", i);
-			}
-		}
-		String nString = sb.toString();
-		double d = Double.parseDouble(nString);
-		long l = (long) d;
-		if (l == d) {// Pas de partie décimale
-			int n = (int) l;
-			return n == l ? n : l;
-		}
-		return d;
-	}
-	
-	/**
-	 * Lit tous les caractères suivants jusqu'à ce que des guillemets (") soient rencontré. Les premiers guillemets
-	 * doivent déjà avoir été lus avant d'appeler cette méthode. <br>
-	 * La chaîne de caractère retournée ne contient <b>pas</b> les guillemets. Les caractères réservés peuvent être
-	 * utilisés avec \ devant.<br>
-	 * Cette méthode lit les guillemets qui terminent la chaîne de caractères.
-	 *
-	 * @return un objet String
-	 */
-	protected String nextString() {
-		StringBuilder sb = new StringBuilder();
-		boolean escape = false;// true si le prochain caractère est échappé
-		char[] hexaCode = new char[4];// stockage des chiffres hexadécimaux
-		int leftHexa = 0;// les x prochains chiffres hexadécimaux comme un code de caractère.
-		while (true) {
-			char c = next();
-			if (leftHexa > 0) {
-				hexaCode[4 - leftHexa] = c;
-				leftHexa--;
-				if (leftHexa == 0) {
-					String hexaCodeString = new String(hexaCode);
-					try {
-						int codePoint = Integer.parseInt(hexaCodeString, 16);// Lit le nombre hexadécimal
-						char unicode = (char) codePoint;
-						sb.append(unicode);
-					} catch (NumberFormatException ex) {
-						throw new JsonException("Invalid hexadecimal codepoint \\u" + hexaCodeString, ex);
-					}
+	private String until(char... ends) {
+		for (int i = pos; i < data.length(); i++) {
+			char c = data.charAt(i);
+			for (char end : ends) {
+				if (c == end) {
+					String str = data.substring(pos, i);
+					pos = i;
+					return str;
 				}
-				continue;
 			}
-			if (c == '\\') {
-				escape = true;
-				continue;
-			}
+		}
+		throw new JsonException("Invalid end of data");
+	}
+	
+	private String nextString() {
+		StringBuilder sb = new StringBuilder();
+		boolean escape = false;
+		while (hasNext()) {
+			char c = next();
 			if (escape) {
+				sb.append(unescape(c));
 				escape = false;
-				// Note: \' n'est PAS un échappement valide en JSON car les chaînes de caractères Json sont délimitées
-				// par des guillemets ".
-				switch (c) {
-					case '\\':// backshlash \
-						sb.append('\\');
-						break;
-					case '\"':// guillemets "
-						sb.append('\"');
-						break;
-					case '/':// JSON permet d'échapper les slashs avec '\/'
-						sb.append('/');
-						break;
-					case 'b':
-						sb.append('\b');
-						break;
-					case 'f':
-						sb.append('\f');
-						break;
-					case 'n':
-						sb.append('\n');
-						break;
-					case 'r':
-						sb.append('\r');
-						break;
-					case 't':
-						sb.append('\t');
-						break;
-					case 'u':// Les 4 prochains caractères doivent former un code de caractère héxadécimal
-						leftHexa = 4;
-						break;
-					default:// C'est pas un échappement valide !
-						throw new JsonException("Invalid escape sequence \\" + c);
-				}
-			} else if (c == '\"') {// Fin de la chaîne de caractères
+			} else if (c == '\\') {
+				escape = true;
+			} else if (c == '"') {// end of the string
 				return sb.toString();
 			} else {
 				sb.append(c);
 			}
-			
 		}
+		throw new JsonException("Invalid String at position " + pos + ": it nerver ends");
 	}
 	
-	/**
-	 * Fills all the buffer by reading from the InputStream.
-	 *
-	 * @throws IOException
-	 */
-	protected void fill() throws IOException {
-		int read = reader.read(chars);
-		if (read == -1) {
-			throw new IOException("End of stream");
-		}
-		size = read;
-		i = 0;
+	private boolean hasNext() {
+		return pos < data.length();
 	}
 	
-	protected boolean tryFill() {
-		try {
-			fill();
-			return true;
-		} catch (IOException ex) {
-			return false;
-		}
+	private char next() {
+		return data.charAt(pos++);
 	}
 	
-	/**
-	 * Keep the remaining data, and read further bytes from the Reader.
-	 *
-	 * @throws IOException
-	 */
-	protected void refill() throws IOException {
-		if (i == size) {
-			i = size - 1;// On garde le dernier caractère, au cas où.
+	private char nextUseful() {
+		char c = ' ';
+		while (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+			if (!hasNext())
+				throw new JsonException("Invalid end of data: things are missing!");
+			c = next();
 		}
-		int left = size - i;// Nombre de caractères restants.
-		// On décale tout au début:
-		System.arraycopy(chars, i, chars, 0, left);
-		
-		int read = reader.read(chars, left, blockSize - left);// caractères lus
-		if (read == -1) {
-			throw new IOException("End of stream.");
-		}
-		size = left + read;// cactères restants + caractères lus.
-		i = 0;
+		return c;
 	}
 	
-	/**
-	 * Essaie de lire plus de caractères.
-	 *
-	 * @return <tt>true</tt> si plus de caractères ont été lus, sinon <tt>false</tt> (et ce quelque soit la raison de
-	 *         l'échec).
-	 */
-	protected boolean tryRefill() {
-		try {
-			refill();
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-	
-	/**
-	 * donne le prochain caractère et incrémente la position <tt>i</tt>. Cette méthode tente si besoin de lire plus de
-	 * données avec le Reader, s'il existe.
-	 *
-	 * @return le prochain caractère
-	 */
-	protected char next() {
-		if (i == size) {
-			if (reader == null) {
-				throw new JsonException("Not enough chars available !");
-			} else {
+	private char unescape(char c) {
+		switch (c) {
+			case 'b':
+				return '\b';
+			case 't':
+				return '\t';
+			case 'n':
+				return '\n';
+			case 'f':
+				return '\f';
+			case 'r':
+				return '\r';
+			case '"':
+				return '"';
+			case '\\':
+				return '\\';
+			case 'u': {// unicode uXXXX
+				if (data.length() - pos < 5)
+					throw new JsonException("Invalid unicode code point at position " + pos);
+				String unicode = data.substring(pos, pos + 4);
+				pos += 4;
 				try {
-					refill();
-				} catch (IOException ex) {
-					throw new JsonException("Not enough chars available !", ex);
+					int hexVal = Integer.parseInt(unicode, 16);
+					return (char) hexVal;
+				} catch (NumberFormatException ex) {
+					throw new JsonException("Invalid unicode code point at position " + pos, ex);
 				}
 			}
+			default:
+				throw new JsonException("Invalid escape sequence: \"\\" + c + "\" at position " + pos);
 		}
-		return chars[i++];
-	}
-	
-	/**
-	 * donne le prochain caractère sans avancer la position.
-	 *
-	 * @return le prochain caractère, ou {@code <tt>Optional.empty()</tt>} s'il n'y en a pas.
-	 */
-	protected Optional<Character> lookAtNext() {
-		if (i == size) {
-			if (reader == null) {
-				return Optional.empty();
-			} else {
-				try {
-					refill();
-				} catch (IOException ex) {
-					return Optional.empty();
-				}
-			}
-		}
-		return Optional.of(chars[i]);
-	}
-	
-	/**
-	 * le prochain caractère qui n'est ni un espace ni une tabulation (\t) ni un saut de ligne (\r ou \c).
-	 *
-	 * @return
-	 */
-	protected char nextUseful() {
-		while (true) {
-			char c = next();
-			if (!(c == ' ' || c == '\t' || c == '\n' || c == '\r')) {
-				return c;
-			}
-		}
-		
-	}
-	
-	protected boolean isUseful(char c) {
-		return !(c == ' ' || c == '\t' || c == '\n' || c == '\r');
-	}
-	
-	protected boolean isUseless(char c) {
-		return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 	}
 	
 }
