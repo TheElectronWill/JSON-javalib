@@ -35,6 +35,6 @@ Object  | `Map<String, Object>`
 null    | `null`
 
 ## Download
-Download the latest release (v1.0.0):
-* [Just the compiled jar](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.0.0/JSON.lib.v1.0.by.TheElectronWill.jar)
-* [The jar containing the compiled classes + the documented source](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.0.0/JSON.lib.v1.0.by.TheElectronWill.documented_source.jar)
+Download the latest release (v1.1):
+* [Just the compiled jar](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.1/JSON.lib.v1.1.by.TheElectronWill.jar)
+* [The jar containing the compiled classes + the documented source](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.1/JSON.lib.v1.1.by.TheElectronWill.documented_source.jar)
