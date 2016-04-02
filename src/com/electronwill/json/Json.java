@@ -112,11 +112,11 @@ public final class Json {
 	}
 	
 	/**
-	 * Writes a json array to a String. This method is equivalent to {@code write(jsonArray, false)}, so it isn't human
-	 * friendly.
+	 * Writes a json array to a String. This method is equivalent to {@code writeToString(jsonArray, false)}, so it
+	 * isn't human friendly.
 	 */
-	public static void writeToString(List<Object> jsonArray) throws IOException {
-		writeToString(jsonArray, false);
+	public static String writeToString(List<Object> jsonArray) throws IOException {
+		return writeToString(jsonArray, false);
 	}
 	
 	/**
@@ -124,17 +124,18 @@ public final class Json {
 	 * 
 	 * @param true to indent and space the output, false to compact everything
 	 */
-	public static void writeToString(List<Object> jsonArray, boolean humanFriendly) throws IOException {
+	public static String writeToString(List<Object> jsonArray, boolean humanFriendly) throws IOException {
 		FastStringWriter stringWriter = new FastStringWriter();
 		write(jsonArray, stringWriter, humanFriendly);
+		return stringWriter.toString();
 	}
 	
 	/**
-	 * Writes a json object to a Writer. This method is equivalent to {@code write(jsonObject, writer, false)}, so it
+	 * Writes a json object to a Writer. This method is equivalent to {@code writeToString(jsonObject, false)}, so it
 	 * isn't human friendly.
 	 */
-	public static void writeToString(Map<String, Object> jsonObject) throws IOException {
-		writeToString(jsonObject, false);
+	public static String writeToString(Map<String, Object> jsonObject) throws IOException {
+		return writeToString(jsonObject, false);
 	}
 	
 	/**
@@ -142,9 +143,10 @@ public final class Json {
 	 * 
 	 * @param true to indent and space the output, false to compact everything
 	 */
-	public static void writeToString(Map<String, Object> jsonObject, boolean humanFriendly) throws IOException {
+	public static String writeToString(Map<String, Object> jsonObject, boolean humanFriendly) throws IOException {
 		FastStringWriter stringWriter = new FastStringWriter();
 		write(jsonObject, stringWriter, humanFriendly);
+		return stringWriter.toString();
 	}
 	
 	private Json() {}
