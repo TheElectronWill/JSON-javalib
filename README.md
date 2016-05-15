@@ -22,6 +22,8 @@ boolean humanFriendly = true;//true to indent and space the output, false to com
 Json.write(jsonObject, writer, humanFriendly);
 ```
 
+You can also use `JsonReader` and `JsonWriter` directly.
+
 ## Data types
 The JSON data is mapped to the following java types:
 
@@ -29,6 +31,7 @@ The JSON data is mapped to the following java types:
 ------- | -------
 Integer | `int` or `long` (it depends on the size)
 Decimal | `double`
+Boolean | `boolean`
 String  | `String`
 Array   | `List<Object>`
 Object  | `Map<String, Object>`
