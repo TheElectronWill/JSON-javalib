@@ -16,7 +16,7 @@ public class FastStringWriter extends Writer {
 	 * Creates a new FastStringWriter with a default StringBuilder
 	 */
 	public FastStringWriter() {
-		sb = new StringBuilder();
+		sb = new StringBuilder(64);
 	}
 	
 	/**
