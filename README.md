@@ -37,7 +37,5 @@ Array   | `List<Object>`
 Object  | `Map<String, Object>`
 null    | `null`
 
-## Download
-Download the latest release (v1.1):
-* [Just the compiled jar](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.1/JSON.lib.v1.1.by.TheElectronWill.jar)
-* [The jar containing the compiled classes + the documented source](https://github.com/TheElectronWill/JSON-javalib/releases/download/v1.1/JSON.lib.v1.1.by.TheElectronWill.documented_source.jar)
+## Java version
+This library requires Java 7.
