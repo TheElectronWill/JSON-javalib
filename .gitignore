@@ -1,1 +1,3 @@
-src/com/electronwill/json/Tester.java
+build/
+.nb-gradle/
+.gradle/
