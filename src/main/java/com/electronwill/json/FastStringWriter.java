@@ -78,7 +78,7 @@ public class FastStringWriter extends Writer {
 	
 	@Override
 	public void write(int c) {
-		sb.append(c);
+		sb.append((char) c);
 	}
 	
 	/**
