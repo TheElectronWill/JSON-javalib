@@ -7,67 +7,73 @@ import java.util.Map;
 
 /**
  * Reads json data.
- * 
+ *
  * @author TheElectronWill
- *		
  */
 public class JsonReader {
+
 	private final String data;
 	private int pos = 0;
-	
+
 	public JsonReader(String data) {
 		this.data = data;
 	}
-	
+
 	public Object readObjectOrArray() {
 		char firstChar = nextUseful();
-		if (firstChar == '{')
+		if (firstChar == '{') {
 			return nextObject();
-		if (firstChar == '[')
+		}
+		if (firstChar == '[') {
 			return nextArray();
+		}
 		throw new JsonException("Invalid character '" + firstChar + "' at the beginning of the data");
 	}
-	
+
 	public Map<String, Object> readObject() {
 		char firstChar = nextUseful();
-		if (firstChar != '{')
+		if (firstChar != '{') {
 			throw new JsonException("Invalid character '" + firstChar + "' at the beginning of a JSON object, at position " + pos);
+		}
 		return nextObject();
 	}
-	
+
 	public List<Object> readArray() {
 		char firstChar = nextUseful();
-		if (firstChar != '[')
+		if (firstChar != '[') {
 			throw new JsonException("Invalid character '" + firstChar + "' at the beginning of a JSON array, at position " + pos);
+		}
 		return nextArray();
 	}
-	
+
 	private Map<String, Object> nextObject() {
 		Map<String, Object> map = new HashMap<>();
 		while (true) {
 			char keyFirstChar = nextUseful();
-			if (keyFirstChar != '"')
+			if (keyFirstChar != '"') {
 				throw new JsonException("Invalid character at the beginning of a key, at position " + pos);
+			}
 			String key = nextString();
-			
+
 			char sep = nextUseful();
-			if (sep != ':')
+			if (sep != ':') {
 				throw new JsonException("Invalid separator '" + sep + "' at position " + pos);
-				
+			}
+
 			char valueFirstChar = nextUseful();
 			Object value = nextValue(valueFirstChar, ',', '}', ' ', '\t', '\n', '\r');
 			map.put(key, value);
-			
+
 			char after = nextUseful();
 			if (after == '}') {
 				return map;
 			} else if (after != ',') {
 				throw new JsonException("Invalid separator '" + after + "' at position " + pos);
 			}
-			
+
 		}
 	}
-	
+
 	private List<Object> nextArray() {
 		ArrayList<Object> list = new ArrayList<>();
 		while (true) {
@@ -86,7 +92,7 @@ public class JsonReader {
 			}
 		}
 	}
-	
+
 	private Object nextValue(char firstChar, char... allowedEnds) {
 		switch (firstChar) {
 			case '+':
@@ -103,10 +109,12 @@ public class JsonReader {
 			case '9':
 				pos--;// to include the first char in the string below
 				String number = until(allowedEnds);
-				if (number.indexOf('.') > 0)
+				if (number.indexOf('.') > 0) {
 					return Double.parseDouble(number);
-				if (number.length() < 10)
+				}
+				if (number.length() < 10) {
 					return Integer.parseInt(number);
+				}
 				return Long.parseLong(number);
 			case '"':
 				return nextString();
@@ -117,8 +125,9 @@ public class JsonReader {
 				return Boolean.parseBoolean(bool);
 			case 'n':// null
 				String valNull = until(allowedEnds);
-				if (valNull.equals("ull"))
+				if (valNull.equals("ull")) {
 					return null;
+				}
 				throw new JsonException("Invalid value \"n" + valNull + "\" at position " + pos);
 			case '{':
 				return nextObject();
@@ -127,9 +136,9 @@ public class JsonReader {
 			default:
 				throw new JsonException("Invalid character '" + firstChar + "' at the beginning of the value at position " + pos);
 		}
-		
+
 	}
-	
+
 	private String until(char... ends) {
 		for (int i = pos; i < data.length(); i++) {
 			char c = data.charAt(i);
@@ -143,7 +152,7 @@ public class JsonReader {
 		}
 		throw new JsonException("Invalid end of data");
 	}
-	
+
 	private String nextString() {
 		StringBuilder sb = new StringBuilder();
 		boolean escape = false;
@@ -162,25 +171,26 @@ public class JsonReader {
 		}
 		throw new JsonException("Invalid String at position " + pos + ": it nerver ends");
 	}
-	
+
 	private boolean hasNext() {
 		return pos < data.length();
 	}
-	
+
 	private char next() {
 		return data.charAt(pos++);
 	}
-	
+
 	private char nextUseful() {
 		char c = ' ';
 		while (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-			if (!hasNext())
+			if (!hasNext()) {
 				throw new JsonException("Invalid end of data: things are missing!");
+			}
 			c = next();
 		}
 		return c;
 	}
-	
+
 	private char unescape(char c) {
 		switch (c) {
 			case 'b':
@@ -200,8 +210,9 @@ public class JsonReader {
 			case '/':
 				return '/';
 			case 'u': {// unicode uXXXX
-				if (data.length() - pos < 5)
+				if (data.length() - pos < 5) {
 					throw new JsonException("Invalid unicode code point at position " + pos);
+				}
 				String unicode = data.substring(pos, pos + 4);
 				pos += 4;
 				try {
@@ -215,5 +226,5 @@ public class JsonReader {
 				throw new JsonException("Invalid escape sequence: \"\\" + c + "\" at position " + pos);
 		}
 	}
-	
+
 }

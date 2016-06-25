@@ -6,23 +6,24 @@ package com.electronwill.json;
  * @author TheElectronWill
  */
 public class JsonException extends RuntimeException {
-	
+
 	private static final long serialVersionUID = 1L;
-	
-	public JsonException() {}
-	
+
+	public JsonException() {
+	}
+
 	public JsonException(String message) {
 		super(message);
 	}
-	
+
 	public JsonException(Throwable cause) {
 		super(cause);
 	}
-	
+
 	public JsonException(String message, Throwable cause) {
 		super(message, cause);
 	}
-	
+
 	public JsonException(String thingName, Object thing, String location, int charLocation, String expected) {
 		super(new StringBuilder()
 				.append("Invalid ")
@@ -37,7 +38,7 @@ public class JsonException extends RuntimeException {
 				.append(charLocation)
 				.toString());
 	}
-	
+
 	public JsonException(String thingName, Object thing, String location, int charLocation) {
 		super(new StringBuilder()
 				.append("Invalid ")
@@ -50,5 +51,5 @@ public class JsonException extends RuntimeException {
 				.append(charLocation)
 				.toString());
 	}
-	
+
 }
