@@ -197,6 +197,8 @@ public class JsonReader {
 				return '"';
 			case '\\':
 				return '\\';
+			case '/':
+				return '/';
 			case 'u': {// unicode uXXXX
 				if (data.length() - pos < 5)
 					throw new JsonException("Invalid unicode code point at position " + pos);
